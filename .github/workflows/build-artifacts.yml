@@ -137,72 +137,72 @@ jobs:
           path: ${{ matrix.archive_name_prefix }}-${{ steps.source_name.outputs.SOURCE_NAME }}
           if-no-files-found: error
 
-  build-docker:
-    runs-on: ubuntu-18.04
-    name: Prepare multiarch docker images
-    if: startsWith(github.ref, 'refs/tags/') || startsWith(github.ref, 'refs/heads/unstable') || startsWith(github.ref, 'refs/heads/stable')
-    needs: build
+#   build-docker:
+#     runs-on: ubuntu-18.04
+#     name: Prepare multiarch docker images
+#     if: startsWith(github.ref, 'refs/tags/') || startsWith(github.ref, 'refs/heads/unstable') || startsWith(github.ref, 'refs/heads/stable')
+#     needs: build
 
-    steps:
-      - name: Login to DockerHub
-        uses: docker/login-action@v1 
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+#     steps:
+#       - name: Login to DockerHub
+#         uses: docker/login-action@v1 
+#         with:
+#           username: ${{ secrets.DOCKERHUB_USERNAME }}
+#           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Set up QEMU for cross platform builds
-        id: qemu
-        uses: docker/setup-qemu-action@v1
+#       - name: Set up QEMU for cross platform builds
+#         id: qemu
+#         uses: docker/setup-qemu-action@v1
 
-      - name: Available platforms
-        run: echo ${{ steps.qemu.outputs.platforms }}
+#       - name: Available platforms
+#         run: echo ${{ steps.qemu.outputs.platforms }}
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+#       - name: Set up Docker Buildx
+#         uses: docker/setup-buildx-action@v1
 
-      - name: Cache Docker layers
-        uses: actions/cache@v2
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-
+#       - name: Cache Docker layers
+#         uses: actions/cache@v2
+#         with:
+#           path: /tmp/.buildx-cache
+#           key: ${{ runner.os }}-buildx-${{ github.sha }}
+#           restore-keys: |
+#             ${{ runner.os }}-buildx-
 
-      # Convert to a valid docker tagname
-      # refs/tags/v1.2.3 => v1.2.3
-      # refs/heads/unstable => unstable
-      # refs/heads/feature/foo => foo
-      # refs/pull/421/merge => merge
-      - name: Get branch or tag name
-        id: source_name
-        run: echo ::set-output name=SOURCE_NAME::${GITHUB_REF##*/}
+#       # Convert to a valid docker tagname
+#       # refs/tags/v1.2.3 => v1.2.3
+#       # refs/heads/unstable => unstable
+#       # refs/heads/feature/foo => foo
+#       # refs/pull/421/merge => merge
+#       - name: Get branch or tag name
+#         id: source_name
+#         run: echo ::set-output name=SOURCE_NAME::${GITHUB_REF##*/}
 
-      - uses: haya14busa/action-cond@v1
-        name: Decide front-end version
-        id: front_version
-        with:
-          cond: startsWith(github.ref, 'refs/tags/')
-          if_true: ${{ steps.source_name.outputs.SOURCE_NAME }}
-          if_false: "unstable"
+#       - uses: haya14busa/action-cond@v1
+#         name: Decide front-end version
+#         id: front_version
+#         with:
+#           cond: startsWith(github.ref, 'refs/tags/')
+#           if_true: ${{ steps.source_name.outputs.SOURCE_NAME }}
+#           if_false: "unstable"
 
-      - name: Show conditional value from pervious step
-        run: echo "${{ steps.front_version.outputs.value }}"
+#       - name: Show conditional value from pervious step
+#         run: echo "${{ steps.front_version.outputs.value }}"
 
-      - name: Build and push
-        uses: docker/build-push-action@v2
-        with:
-          platforms: linux/amd64,linux/arm64,linux/arm/v7
-          push: true
-          pull: true
-          tags: |
-            muveex/kikoeru-express:${{ steps.source_name.outputs.SOURCE_NAME }}
-            muveex/kikoeru-express:dev
-            muveex/kikoeru:${{ steps.source_name.outputs.SOURCE_NAME }}
-            muveex/kikoeru:dev
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache-new
-          build-args:
-            FRONTEND_VERSION=${{ steps.front_version.outputs.value }}
+#       - name: Build and push
+#         uses: docker/build-push-action@v2
+#         with:
+#           platforms: linux/amd64,linux/arm64,linux/arm/v7
+#           push: true
+#           pull: true
+#           tags: |
+#             muveex/kikoeru-express:${{ steps.source_name.outputs.SOURCE_NAME }}
+#             muveex/kikoeru-express:dev
+#             muveex/kikoeru:${{ steps.source_name.outputs.SOURCE_NAME }}
+#             muveex/kikoeru:dev
+#           cache-from: type=local,src=/tmp/.buildx-cache
+#           cache-to: type=local,dest=/tmp/.buildx-cache-new
+#           build-args:
+#             FRONTEND_VERSION=${{ steps.front_version.outputs.value }}
 
       # Temp fix according to official document at
       # https://github.com/docker/build-push-action/blob/master/docs/advanced/cache.md#registry-cache
@@ -269,24 +269,24 @@ jobs:
           Get-Job | Stop-Job
           Get-job | Remove-Job
 
-  test-docker-image:
-    runs-on: ubuntu-latest
-    name: Test Docker image on linux/amd64
-    needs: build-docker
-    container: 'muveex/kikoeru:dev'
+#   test-docker-image:
+#     runs-on: ubuntu-latest
+#     name: Test Docker image on linux/amd64
+#     needs: build-docker
+#     container: 'muveex/kikoeru:dev'
 
-    steps:
-      - name: Show running process
-        run: ps -a
+#     steps:
+#       - name: Show running process
+#         run: ps -a
 
-      - name: Test
-        run: |
-          set -e
-          apk update && apk add curl
-          nohup node /usr/src/kikoeru/app.js &
-          sleep 10 && cat nohup.out 2>/dev/null &&
-          curl --fail -I http://localhost:8888/
-          pkill -TERM node
+#       - name: Test
+#         run: |
+#           set -e
+#           apk update && apk add curl
+#           nohup node /usr/src/kikoeru/app.js &
+#           sleep 10 && cat nohup.out 2>/dev/null &&
+#           curl --fail -I http://localhost:8888/
+#           pkill -TERM node
 
   publish:
     runs-on: ubuntu-18.04
