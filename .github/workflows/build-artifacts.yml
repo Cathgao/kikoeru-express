@@ -205,12 +205,12 @@ jobs:
 #             FRONTEND_VERSION=${{ steps.front_version.outputs.value }}
 
       # Temp fix according to official document at
-      # https://github.com/docker/build-push-action/blob/master/docs/advanced/cache.md#registry-cache
-      # They are working to refactor with GitHub cache backend
-      - name: Move cache
-        run: |
-          rm -rf /tmp/.buildx-cache
-          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+      # # https://github.com/docker/build-push-action/blob/master/docs/advanced/cache.md#registry-cache
+      # # They are working to refactor with GitHub cache backend
+      # - name: Move cache
+      #   run: |
+      #     rm -rf /tmp/.buildx-cache
+      #     mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
   test-pkg-archive:
     runs-on: ${{ matrix.os }}
