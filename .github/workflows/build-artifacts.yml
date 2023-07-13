@@ -53,19 +53,19 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-18.04
+          - os: ubuntu-latest
             node_version: 14
             architecture: x64
             pkg_target: node14-linux-x64
             archive_name_prefix: kikoeru-linux-x64
 
-          - os: macos-10.15
+          - os: macos-latest
             node_version: 14
             architecture: x64
             pkg_target: node14-macos-x64
             archive_name_prefix: kikoeru-darwin-x64
 
-          - os: windows-2019
+          - os: windows-latest
             node_version: 14
             architecture: x64
             pkg_target: node14-win-x64
