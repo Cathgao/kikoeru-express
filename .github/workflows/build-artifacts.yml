@@ -6,6 +6,8 @@ on:
       - "dependabot/**"
     tags:
       - v*
+  issues:
+    types: opened, edited, closed
 
 jobs:
   build-front-end:
