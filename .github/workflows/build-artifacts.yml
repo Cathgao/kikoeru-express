@@ -11,7 +11,7 @@ on:
 
 jobs:
   build-front-end:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     name: Build front end PWA from source
     steps:
       - name: Check out latest front end
