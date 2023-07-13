@@ -226,13 +226,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-18.04
+          - os: ubuntu-latest
             archive_name_prefix: kikoeru-linux-x64
 
-          - os: macos-10.15
+          - os: macos-latest
             archive_name_prefix: kikoeru-darwin-x64
           
-          - os: windows-2019
+          - os: windows-latest
             archive_name_prefix: kikoeru-win-x64
 
     steps:
