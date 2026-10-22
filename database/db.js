@@ -6,7 +6,7 @@ const databaseExist = fs.existsSync(path.join(config.databaseFolderDir, 'db.sqli
 
 // knex 操作数据库
 const connEnv = process.env.KNEX_ENV || process.env.NODE_ENV || 'development';
-const conn = require('./knexfile')[connEnv]
+const conn = require('./knexfile')[connEnv] || require('./knexfile').development;
 const knex = require('knex')(conn);
 
 /**

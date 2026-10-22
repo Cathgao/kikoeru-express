@@ -155,7 +155,7 @@ router.get('/search/:keyword?',
   query('order').optional({nullable: true}).isIn(['id', 'release', 'rating', 'dl_count', 'review_count', 'price', 'rate_average_2dp', 'nsfw', 'random']),
   query('sort').optional({nullable: true}).isIn(['desc', 'asc']),
   query('seed').optional({nullable: true}).isInt(),
-  async (req, res, next) => {
+  async (req, res) => {
   if(!isValidRequest(req, res)) return;
 
   const keyword = req.params.keyword ? req.params.keyword.trim() : '';

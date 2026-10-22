@@ -15,29 +15,30 @@ jobs:
     name: Build front end PWA from source
     steps:
       - name: Check out latest front end
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           repository: kikoeru-project/kikoeru-quasar
           ref: unstable
 
       - name: Setup node
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
-          node-version: 24
-      
+          node-version: 'latest'
+          check-latest: true
+
       - run: npm install -g @quasar/cli
       - run: npm ci
       - run: quasar build && quasar build -m pwa
 
       - name: 'Upload PWA'
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: PWA-unstable
           path: dist/pwa
           if-no-files-found: error
 
       - name: 'Upload SPA'
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: SPA-unstable
           path: dist/spa
@@ -54,32 +55,33 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            node_version: 24
+            node_version: latest
             architecture: x64
-            pkg_target: node18-linux-x64
+            pkg_target: node24-linux-x64
             archive_name_prefix: kikoeru-linux-x64
 
           - os: macos-latest
-            node_version: 24
+            node_version: latest
             architecture: x64
-            pkg_target: node18-macos-x64
+            pkg_target: node24-macos-x64
             archive_name_prefix: kikoeru-darwin-x64
 
           - os: windows-latest
-            node_version: 24
+            node_version: latest
             architecture: x64
-            pkg_target: node18-win-x64
+            pkg_target: node24-win-x64
             archive_name_prefix: kikoeru-win-x64
 
     name: Node ${{ matrix.node_version }} - ${{ matrix.architecture }} on ${{ matrix.os }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Setup node
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node_version }}
+          node-version: 'latest'
+          check-latest: true
           architecture: ${{ matrix.architecture }}
 
       - run: npm install
@@ -90,7 +92,7 @@ jobs:
         run: echo $(ls node_modules/sqlite3/lib/binding)
 
       - name: 'Upload bindings'
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: node-${{ matrix.node_version }}-${{ matrix.architecture }}-${{ matrix.os }}-binding
           path: node_modules/sqlite3/lib/binding
@@ -102,16 +104,16 @@ jobs:
       # refs/pull/421/merge => merge
       - name: Get branch or tag name
         id: source_name
-        run: echo ::set-output name=SOURCE_NAME::${GITHUB_REF##*/}
+        run: echo "SOURCE_NAME=${GITHUB_REF##*/}" >> "$GITHUB_OUTPUT"
 
       - name: Install pkg
-        run: npm install -g pkg@5.8.1
+        run: npm install -g @yao-pkg/pkg
 
       - name: Make empty dirs to suppress pkg warnings
         run: mkdir -p config sqlite covers VoiceWork
 
       - name: Download front-end artifact (PWA)
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
           name: PWA-unstable
           path: dist
@@ -133,92 +135,46 @@ jobs:
           archive_name: ${{ matrix.archive_name_prefix }}-${{ steps.source_name.outputs.SOURCE_NAME }}
 
       - name: 'Prepare release archive'
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.archive_name_prefix }}-${{ steps.source_name.outputs.SOURCE_NAME }}
           path: ${{ matrix.archive_name_prefix }}-${{ steps.source_name.outputs.SOURCE_NAME }}
           if-no-files-found: error
 
 #   build-docker:
-#     runs-on: ubuntu-18.04
+#     runs-on: ubuntu-latest
 #     name: Prepare multiarch docker images
 #     if: startsWith(github.ref, 'refs/tags/') || startsWith(github.ref, 'refs/heads/unstable') || startsWith(github.ref, 'refs/heads/stable')
 #     needs: build
-
 #     steps:
 #       - name: Login to DockerHub
-#         uses: docker/login-action@v1 
+#         uses: docker/login-action@v3
 #         with:
 #           username: ${{ secrets.DOCKERHUB_USERNAME }}
 #           password: ${{ secrets.DOCKERHUB_TOKEN }}
-
 #       - name: Set up QEMU for cross platform builds
 #         id: qemu
-#         uses: docker/setup-qemu-action@v1
-
+#         uses: docker/setup-qemu-action@v3
 #       - name: Available platforms
 #         run: echo ${{ steps.qemu.outputs.platforms }}
-
 #       - name: Set up Docker Buildx
-#         uses: docker/setup-buildx-action@v1
-
-#       - name: Cache Docker layers
-#         uses: actions/cache@v2
-#         with:
-#           path: /tmp/.buildx-cache
-#           key: ${{ runner.os }}-buildx-${{ github.sha }}
-#           restore-keys: |
-#             ${{ runner.os }}-buildx-
-
-#       # Convert to a valid docker tagname
-#       # refs/tags/v1.2.3 => v1.2.3
-#       # refs/heads/unstable => unstable
-#       # refs/heads/feature/foo => foo
-#       # refs/pull/421/merge => merge
+#         uses: docker/setup-buildx-action@v3
 #       - name: Get branch or tag name
 #         id: source_name
-#         run: echo ::set-output name=SOURCE_NAME::${GITHUB_REF##*/}
-
-#       - uses: haya14busa/action-cond@v1
-#         name: Decide front-end version
-#         id: front_version
-#         with:
-#           cond: startsWith(github.ref, 'refs/tags/')
-#           if_true: ${{ steps.source_name.outputs.SOURCE_NAME }}
-#           if_false: "unstable"
-
-#       - name: Show conditional value from pervious step
-#         run: echo "${{ steps.front_version.outputs.value }}"
-
+#         run: echo "SOURCE_NAME=${GITHUB_REF##*/}" >> "$GITHUB_OUTPUT"
 #       - name: Build and push
-#         uses: docker/build-push-action@v2
+#         uses: docker/build-push-action@v6
 #         with:
-#           platforms: linux/amd64,linux/arm64,linux/arm/v7
+#           platforms: linux/amd64,linux/arm64
 #           push: true
-#           pull: true
 #           tags: |
 #             muveex/kikoeru-express:${{ steps.source_name.outputs.SOURCE_NAME }}
 #             muveex/kikoeru-express:dev
-#             muveex/kikoeru:${{ steps.source_name.outputs.SOURCE_NAME }}
-#             muveex/kikoeru:dev
-#           cache-from: type=local,src=/tmp/.buildx-cache
-#           cache-to: type=local,dest=/tmp/.buildx-cache-new
-#           build-args:
-#             FRONTEND_VERSION=${{ steps.front_version.outputs.value }}
-
-      # Temp fix according to official document at
-      # # https://github.com/docker/build-push-action/blob/master/docs/advanced/cache.md#registry-cache
-      # # They are working to refactor with GitHub cache backend
-      # - name: Move cache
-      #   run: |
-      #     rm -rf /tmp/.buildx-cache
-      #     mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
   test-pkg-archive:
     runs-on: ${{ matrix.os }}
     name: Test pkg release archives on ${{ matrix.os }} x64
     needs: [build]
-
     defaults:
       run:
         shell: bash
@@ -238,10 +194,10 @@ jobs:
     steps:
       - name: Get branch or tag name
         id: source_name
-        run: echo ::set-output name=SOURCE_NAME::${GITHUB_REF##*/}
+        run: echo "SOURCE_NAME=${GITHUB_REF##*/}" >> "$GITHUB_OUTPUT"
 
       - name: Download artifacts
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
           name: ${{ matrix.archive_name_prefix }}-${{ steps.source_name.outputs.SOURCE_NAME }}
 
@@ -249,7 +205,7 @@ jobs:
         run: ls -al .
 
       - name: Test pkg binary on *nix
-        if: ${{ matrix.os == 'ubuntu-18.04' ||  matrix.os == 'macos-10.15' }}
+        if: runner.os != 'Windows'
         run: |
           set -e
           chmod +x ./kikoeru-express
@@ -259,7 +215,7 @@ jobs:
           pkill -TERM kikoeru-express
       
       - name: Test pkg binary on Windows
-        if: ${{ matrix.os == 'windows-2019' }}
+        if: runner.os == 'Windows'
         shell: pwsh
         run: |
           $PSVersionTable
@@ -271,34 +227,15 @@ jobs:
           Get-Job | Stop-Job
           Get-job | Remove-Job
 
-#   test-docker-image:
-#     runs-on: ubuntu-latest
-#     name: Test Docker image on linux/amd64
-#     needs: build-docker
-#     container: 'muveex/kikoeru:dev'
-
-#     steps:
-#       - name: Show running process
-#         run: ps -a
-
-#       - name: Test
-#         run: |
-#           set -e
-#           apk update && apk add curl
-#           nohup node /usr/src/kikoeru/app.js &
-#           sleep 10 && cat nohup.out 2>/dev/null &&
-#           curl --fail -I http://localhost:8888/
-#           pkill -TERM node
-
   publish:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     name: Prepare release draft
     if: startsWith(github.ref, 'refs/tags/')
     needs: [test-pkg-archive]
 
     steps:
       - name: Download artifacts
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
           path: artifacts
 
@@ -309,7 +246,7 @@ jobs:
         run: ls -al artifacts/
 
       - name: Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           draft: true
           files:
