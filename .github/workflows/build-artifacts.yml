@@ -23,12 +23,17 @@ jobs:
       - name: Setup node
         uses: actions/setup-node@v4
         with:
-          node-version: 'latest'
-          check-latest: true
+          node-version: 14
 
-      - run: npm install -g @quasar/cli
-      - run: npm ci
-      - run: quasar build && quasar build -m pwa
+      - name: Fix expired Taobao registry in lockfile
+        run: |
+          sed -i 's|registry\.npm\.taobao\.org|registry.npmmirror.com|g' package-lock.json
+          npm config set registry https://registry.npmmirror.com
+          npm config set strict-ssl false
+
+      - run: npm install -g @quasar/cli@1
+      - run: npm ci || npm install
+      - run: npx quasar build && npx quasar build -m pwa
 
       - name: 'Upload PWA'
         uses: actions/upload-artifact@v4
@@ -55,19 +60,19 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            node_version: latest
+            node_version: '24'
             architecture: x64
             pkg_target: node24-linux-x64
             archive_name_prefix: kikoeru-linux-x64
 
           - os: macos-latest
-            node_version: latest
+            node_version: '24'
             architecture: x64
             pkg_target: node24-macos-x64
             archive_name_prefix: kikoeru-darwin-x64
 
           - os: windows-latest
-            node_version: latest
+            node_version: '24'
             architecture: x64
             pkg_target: node24-win-x64
             archive_name_prefix: kikoeru-win-x64
@@ -80,16 +85,23 @@ jobs:
       - name: Setup node
         uses: actions/setup-node@v4
         with:
-          node-version: 'latest'
+          node-version: '24'
           check-latest: true
           architecture: ${{ matrix.architecture }}
 
+      - run: npm config set registry https://registry.npmmirror.com
       - run: npm install
 
       - run: npm test
 
-      - name: check node-sqlite3 bindings
-        run: echo $(ls node_modules/sqlite3/lib/binding)
+      - name: Locate and prepare node-sqlite3 bindings
+        run: |
+          mkdir -p node_modules/sqlite3/lib/binding node_modules/sqlite3/build/Release node_modules/sqlite3/build
+          find node_modules/sqlite3 -name "*.node" -exec cp -f {} node_modules/sqlite3/lib/binding/ \; 2>/dev/null || true
+          find node_modules/sqlite3 -name "*.node" -exec cp -f {} node_modules/sqlite3/build/Release/ \; 2>/dev/null || true
+          find node_modules/sqlite3 -name "*.node" -exec cp -f {} node_modules/sqlite3/build/ \; 2>/dev/null || true
+          ls -la node_modules/sqlite3/lib/binding/
+          ls -la node_modules/sqlite3/build/
 
       - name: 'Upload bindings'
         uses: actions/upload-artifact@v4
@@ -130,7 +142,7 @@ jobs:
         run: |
           mkdir ${archive_name}
           cp package/* ${archive_name}/
-          cp node_modules/sqlite3/lib/binding/*/*.node ${archive_name}/
+          cp node_modules/sqlite3/lib/binding/*.node ${archive_name}/
         env:
           archive_name: ${{ matrix.archive_name_prefix }}-${{ steps.source_name.outputs.SOURCE_NAME }}
 
@@ -209,23 +221,49 @@ jobs:
         run: |
           set -e
           chmod +x ./kikoeru-express
-          nohup ./kikoeru-express &
-          sleep 10 && cat nohup.out 2>/dev/null &&
+          file ./kikoeru-express || true
+
+          ./kikoeru-express > server.log 2>&1 &
+          SERVER_PID=$!
+          echo "Server started with PID $SERVER_PID"
+
+          READY=0
+          for i in {1..30}; do
+            if curl -s -I http://localhost:8888/ >/dev/null 2>&1; then
+              echo "Server responded successfully after ${i}s!"
+              READY=1
+              break
+            fi
+            if ! kill -0 $SERVER_PID 2>/dev/null; then
+              echo "Server process exited prematurely at ${i}s!"
+              break
+            fi
+            sleep 1
+          done
+
+          echo "=== Server Log Output ==="
+          cat server.log || true
+          echo "========================="
+
+          if [ $READY -eq 0 ]; then
+            echo "Server failed to respond within 30 seconds"
+            exit 1
+          fi
+
           curl --fail -I http://localhost:8888/
-          pkill -TERM kikoeru-express
+          kill -TERM $SERVER_PID || true
       
       - name: Test pkg binary on Windows
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
           $PSVersionTable
-          Start-Job { ./kikoeru-express.exe }
-          sleep 5 &&
-          Get-Job | Receive-Job
-          sleep 5 &&
-          curl --fail -I http://localhost:8888/
-          Get-Job | Stop-Job
-          Get-job | Remove-Job
+          $job = Start-Job { ./kikoeru-express.exe }
+          Start-Sleep -Seconds 10
+          Receive-Job $job
+          curl.exe --fail -I http://localhost:8888/
+          Stop-Job $job -ErrorAction SilentlyContinue
+          Remove-Job $job -ErrorAction SilentlyContinue
 
   publish:
     runs-on: ubuntu-latest

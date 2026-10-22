@@ -28,7 +28,9 @@
     "assets": [
       "dist/**/*",
       "static/**/*",
-      "node_modules/sqlite3/build/**/*.node"
+      "node_modules/sqlite3/**/*.node",
+      "node_modules/sqlite3/build/**/*",
+      "node_modules/sqlite3/lib/binding/**/*"
     ]
   },
   "nodemonConfig": {
@@ -81,7 +83,7 @@
     "tunnel-agent": "^0.6.0",
     "url-join": "^4.0.1",
     "uuid": "^8.3.2",
-    "yargs": "^16.2.0"
+    "yargs": "^17.7.3"
   },
   "devDependencies": {
     "chai": "^4.3.4",
