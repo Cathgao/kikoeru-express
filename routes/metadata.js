@@ -14,6 +14,7 @@ const PAGE_SIZE = config.pageSize || 12;
 // GET work cover image
 router.get('/cover/:id',
   param('id').isInt(),
+  query('type').optional({nullable: true}).isIn(['main', 'sam', '240x240', '360x360']),
   (req, res, next) => {
     if(!isValidRequest(req, res)) return;
 
@@ -70,11 +71,12 @@ router.get('/tracks/:id',
         }
       })
       .catch(err => next(err));
-});
+  });
 
 // GET list of work ids
 router.get('/works',
   query('page').optional({nullable: true}).isInt(),
+  query('order').optional({nullable: true}).isIn(['id', 'release', 'rating', 'dl_count', 'review_count', 'price', 'rate_average_2dp', 'nsfw', 'random', 'betterRandom']),
   query('sort').optional({nullable: true}).isIn(['desc', 'asc']),
   query('seed').optional({nullable: true}).isInt(),
   // eslint-disable-next-line no-unused-vars
@@ -148,7 +150,14 @@ router.get('/:field(circle|tag|va)s/:id',
 });
 
 // eslint-disable-next-line no-unused-vars
-router.get('/search/:keyword?', async (req, res, next) => {
+router.get('/search/:keyword?',
+  query('page').optional({nullable: true}).isInt(),
+  query('order').optional({nullable: true}).isIn(['id', 'release', 'rating', 'dl_count', 'review_count', 'price', 'rate_average_2dp', 'nsfw', 'random']),
+  query('sort').optional({nullable: true}).isIn(['desc', 'asc']),
+  query('seed').optional({nullable: true}).isInt(),
+  async (req, res, next) => {
+  if(!isValidRequest(req, res)) return;
+
   const keyword = req.params.keyword ? req.params.keyword.trim() : '';
   const currentPage = parseInt(req.query.page) || 1;
   // 通过 "音声id, 贩卖日, 用户评价， 售出数, 评论数量, 价格, 平均评价, 全年龄新作" 排序
@@ -192,6 +201,11 @@ router.get('/search/:keyword?', async (req, res, next) => {
 // GET list of work ids, restricted by circle/tag/VA
 router.get('/:field(circle|tag|va)s/:id/works',
   param('field').isIn(['circle', 'tag', 'va']),
+  param('id').isInt(),
+  query('page').optional({nullable: true}).isInt(),
+  query('order').optional({nullable: true}).isIn(['id', 'release', 'rating', 'dl_count', 'review_count', 'price', 'rate_average_2dp', 'nsfw', 'random']),
+  query('sort').optional({nullable: true}).isIn(['desc', 'asc']),
+  query('seed').optional({nullable: true}).isInt(),
   // eslint-disable-next-line no-unused-vars
   async (req, res, next) => {
     // In case regex matching goes wrong

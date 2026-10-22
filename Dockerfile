@@ -2,21 +2,21 @@
 # It copies build artifacts the from front-end image
 # If you want to separate the front-end from the back-end, it should work as well
 
-FROM node:14-alpine as build-dep
+FROM node:24-alpine as build-dep
 
 # Create app directory
 WORKDIR /usr/src/kikoeru
 
-RUN apk update && apk add python make gcc g++ 
+RUN apk update && apk add --no-cache python3 make gcc g++
 
 # Install app dependencies
 # A wildcard is used to ensure both package.json AND package-lock.json are copied
 # where available (npm@5+)
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm ci --omit=dev
 
 # Build SPA and PWA
-FROM node:14 as build-frontend
+FROM node:24 as build-frontend
 WORKDIR /frontend
 # @quasar/app v1 requires node-ass, which takes 30 minutes to compile libsass in CI for arm64 and armv7
 # So I prebuilt the binaries for arm64 and armv7
@@ -32,7 +32,7 @@ RUN npm ci
 RUN quasar build && quasar build -m pwa
 
 # Final stage
-FROM node:14-alpine
+FROM node:24-alpine
 ENV IS_DOCKER=true
 WORKDIR /usr/src/kikoeru
 

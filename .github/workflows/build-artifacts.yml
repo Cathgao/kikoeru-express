@@ -23,7 +23,7 @@ jobs:
       - name: Setup node
         uses: actions/setup-node@v2
         with:
-          node-version: 14
+          node-version: 24
       
       - run: npm install -g @quasar/cli
       - run: npm ci
@@ -54,21 +54,21 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            node_version: 14
+            node_version: 24
             architecture: x64
-            pkg_target: node14-linux-x64
+            pkg_target: node18-linux-x64
             archive_name_prefix: kikoeru-linux-x64
 
           - os: macos-latest
-            node_version: 14
+            node_version: 24
             architecture: x64
-            pkg_target: node14-macos-x64
+            pkg_target: node18-macos-x64
             archive_name_prefix: kikoeru-darwin-x64
 
           - os: windows-latest
-            node_version: 14
+            node_version: 24
             architecture: x64
-            pkg_target: node14-win-x64
+            pkg_target: node18-win-x64
             archive_name_prefix: kikoeru-win-x64
 
     name: Node ${{ matrix.node_version }} - ${{ matrix.architecture }} on ${{ matrix.os }}
@@ -105,7 +105,7 @@ jobs:
         run: echo ::set-output name=SOURCE_NAME::${GITHUB_REF##*/}
 
       - name: Install pkg
-        run: npm install -g pkg@4.5.1
+        run: npm install -g pkg@5.8.1
 
       - name: Make empty dirs to suppress pkg warnings
         run: mkdir -p config sqlite covers VoiceWork

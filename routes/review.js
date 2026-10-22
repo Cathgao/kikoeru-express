@@ -11,6 +11,7 @@ const PAGE_SIZE = config.pageSize || 12;
 
 router.get('/',
   query('page').optional({nullable: true}).isInt(),
+  query('order').optional({nullable: true}).isIn(['id', 'release', 'rating', 'dl_count', 'review_count', 'price', 'rate_average_2dp', 'nsfw']),
   query('sort').optional({nullable: true}).isIn(['desc', 'asc']),
   query('seed').optional({nullable: true}).isInt(),
   query('filter').optional({nullable: true}).isIn(['marked', 'listening', 'listened', 'replay', 'postponed']),

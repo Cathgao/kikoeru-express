@@ -428,10 +428,14 @@ const getWorksWithReviews = async ({username = '', limit = 1000, offset = 0, ord
   .join('t_work', 't_work.id', 't_review.work_id')
   .where('t_review.user_name', username).as('userrate');
 
+  const allowedOrder = ['id', 'release', 'rating', 'dl_count', 'review_count', 'price', 'rate_average_2dp', 'nsfw'];
+  const safeOrderBy = allowedOrder.includes(orderBy) ? orderBy : 'release';
+  const safeSort = sortOption === 'asc' ? 'asc' : 'desc';
+
   let query = () => knex('staticMetadata')
     .select(['staticMetadata.*', 'userrate.userRating', 'userrate.review_text', 'userrate.progress', 'userrate.updated_at', 'userrate.user_name'])
     .join(ratingSubQuery, 'userrate.work_id', 'staticMetadata.id')
-    .orderBy(orderBy, sortOption).orderBy([{ column: 'release', order: 'desc'}, { column: 'id', order: 'desc' }]);
+    .orderBy(safeOrderBy, safeSort).orderBy([{ column: 'release', order: 'desc'}, { column: 'id', order: 'desc' }]);
 
   if (filter) {
     totalCount = await query().where('progress', '=', filter).count('id as count');
